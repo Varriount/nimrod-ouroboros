@@ -4,5 +4,6 @@
 nimcache/
 
 # Full paths.
+/compressed_ouroboros
 /ouroboros
 /test.dat

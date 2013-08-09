@@ -100,27 +100,56 @@ proc replace_binary_data(binary_filename, data_filename: string) =
   assert DATA.len < high(int32) - metadata_size, "Data to append too big"
 
 
-const test_filename = "test.dat"
-
-proc fabricate_test_data() =
+proc fabricate_test_data(src, dest: string) =
+  ## Overwrites dest with the content of src plus appended data.
   let
-    s = "Hello world"
-    appended_data = "appended data"
-  var F = open(test_filename, fmWrite)
-  var A = magic_marker
-  F.write(s)
+    appended_data = "Hello appended data!"
+    total_data_size = len(appended_data) + metadata_size
+  var F = open(dest, fm_write)
+  finally: F.close
+  var A = magic_marker # Duplicate so we can get its address.
+  F.write(read_file(src))
   F.write(appended_data)
   discard F.write_buffer(addr(A), 4)
-  doAssert F.save_int32(metadata_size + len(appended_data))
-  F.close
+  doAssert F.save_int32(total_data_size)
+  setFilePermissions(dest, getFilePermissions(src))
 
-when isMainModule:
+  echo "Generated binary with appended data at " & dest
+  echo "Added " & $total_data_size & " bytes to the executable"
+
+
+proc test1() =
+  ## Tests the get_binary_data_info proc.
+  ##
+  ## The test will look at the current binary, if it contains appended data it
+  ## will try to read the data and display it. If the binary doesn't contain
+  ## data, a new one will be created with the appended data and metadata size.
+  let app_filename = get_app_filename()
   var
     FILE_SIZE: int64
     DATA_SIZE: int32
-  fabricate_test_data()
-  test_filename.get_binary_data_info(FILE_SIZE, DATA_SIZE)
-  echo "File size " & $FILE_SIZE
-  echo "Data size " & $DATA_SIZE
-  echo "Content size " & $(FILE_SIZE - DATA_SIZE)
 
+  app_filename.get_binary_data_info(FILE_SIZE, DATA_SIZE)
+  if DATA_SIZE > 0:
+    # Data found, try to read it!
+    let payload_len = DATA_SIZE - metadata_size
+    echo "Binary " & app_filename & " has appended data!"
+    echo "File size " & $FILE_SIZE
+    echo "Data size " & $DATA_SIZE
+    echo "Content size " & $(FILE_SIZE - DATA_SIZE)
+
+    var F = open(app_filename, fm_read)
+    finally: F.close()
+
+    F.set_file_pos(FILE_SIZE - DATA_SIZE)
+    var BUF = new_string(payload_len)
+    let read_len = F.read_buffer(addr(BUF[0]), payload_len)
+    echo "Did read extra content '" & BUF & "'"
+  else:
+    # No data, create new binary with some appended data.
+    var (DIR, NAME, EXT) = app_filename.split_file()
+    let target_filename = DIR / "compressed_" & NAME & EXT
+    fabricate_test_data(app_filename, target_filename)
+
+when isMainModule:
+  test1()
