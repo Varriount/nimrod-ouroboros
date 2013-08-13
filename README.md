@@ -21,7 +21,8 @@ License
 Installation and usage
 ======================
 
-At the moment the module doesn't do much. If you want to test it please run:
+At the moment the module doesn't do much, it's in alpha state. Could you please
+test it for me on your platform? If yes, to test it please run:
 
 	$ nimrod c -r ouroboros.nim
 
@@ -34,6 +35,9 @@ you run this second version you should get a message similar to:
 	Data size 28
 	Content size 237440
 	Did read extra content 'Hello appended data!'
+
+Does this work on your platform? I'm interested in hearing if it works or not
+for other platforms out of the box, or not at all.
 
 
 Changes
