@@ -59,7 +59,7 @@ proc read_int32(FILE: var TFile): int32 =
         (int32(B[2]) shl 16) or (int32(B[3]) shl 24)
 
 
-proc get_binary_data_info(binary_filename: string,
+proc get_binary_data_info*(binary_filename: string,
     FILE_SIZE: var int64, DATA_SIZE: var int32): bool {. discardable .} =
   ## Reads the specified filename and fills in the file size and data size.
   ##

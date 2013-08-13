@@ -99,8 +99,49 @@ proc process_commandline(): Tcommandline_results =
       quit(3)
 
 
+proc remove_appended_data(filename: string) =
+  ## Removes previously appended binary data from the specified file.
+  ##
+  ## If a serious error happens the proc will quit the process.
+  var
+    FILE_SIZE: int64
+    DATA_SIZE: int32
+  if not filename.get_binary_data_info(FILE_SIZE, DATA_SIZE):
+    echo "No appended data found in " & filename
+    return
+
+  let raw_size = int(FILE_SIZE - DATA_SIZE)
+  assert FILE_SIZE > DATA_SIZE
+  if VERBOSE:
+    echo "Removing " & $DATA_SIZE & " bytes of appended data from " & filename
+
+  var
+    BUF = new_string(raw_size)
+    INPUT = open(filename, fm_read)
+  let read_len = INPUT.read_buffer(addr(BUF[0]), int(raw_size))
+  INPUT.close
+
+  if read_len != raw_size:
+    echo "Error reading bytes from binary! $1 vs $2" % [$read_len, $raw_size]
+    quit(1)
+
+  INPUT = open(filename, fm_write)
+  finally: INPUT.close
+  let written_bytes = INPUT.write_buffer(addr(BUF[0]), raw_size)
+  if written_bytes != raw_size:
+    echo "Error writing " & filename
+    echo "Careful, the file might have been left in a corrupted state!"
+    quit(1)
+
+  if VERBOSE:
+    echo "Left $1 bytes on $2" % [$raw_size, filename]
+
+
 when isMainModule:
   let args = process_commandline()
+
+  if args.options.hasKey(param_remove[0]):
+    remove_appended_data(args.options[param_remove[0]].str_val)
 
   for param in args.positional_parameters:
     echo "Adding dir '" & param.str_val & "'"
