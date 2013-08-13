@@ -11,8 +11,8 @@
 import os, unsigned
 
 const
-  version_str* = "0.1.1" ## Module version as a string.
-  version_int* = (major: 0, minor: 1, maintenance: 1) ## \
+  version_str* = "0.3.1" ## Module version as a string.
+  version_int* = (major: 0, minor: 3, maintenance: 1) ## \
   ## Module version as an integer tuple.
   ##
   ## Major versions changes mean a break in API backwards compatibility, either

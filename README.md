@@ -43,8 +43,19 @@ for other platforms out of the box, or not at all.
 Changes
 =======
 
-This is version 0.1.1. For a list of changes see the [CHANGES.md
+This is version 0.3.1. For a list of changes see the [CHANGES.md
 file](CHANGES.md).
+
+
+Git branches
+============
+
+This project uses the [git-flow branching
+model](https://github.com/nvie/gitflow). Which means the ``master`` default
+branch doesn't *see* much movement, development happens in another branch like
+``develop``. Most people will be fine using the ``master`` branch, but if you
+want to contribute something please check out first the ``develop`` brach and
+do pull requests against that.
 
 
 Feedback
