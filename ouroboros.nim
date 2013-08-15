@@ -24,8 +24,22 @@ const
   ##
   ## Maintenance version changes mean I'm not perfect yet despite all the kpop
   ## I watch.
-  magic_marker: array[4, uint8] = [uint8(0x73), 0x6C, 0x68, 0x2B]
-  metadata_size = 8 ## Length of the magic_marker plus offset.
+
+  magicMarker: array[4, uint8] = [uint8(0xF3), 0x6C, 0x68, 0xFB] ## \
+  ## Magic signature found at the end of the file - 9 bytes.
+  metadataSize = 9 ## Length of the magicMarker plus version and offset.
+
+type
+  AppendedFormat* = enum
+    noData = 0, ## No appended data or unsupported file format.
+    rawFormat = 1, ## Simple BLOB, ouroboros doesn't touch it in any way.
+
+  AppendedData* = object ## Information on a binary
+    fileSize*: int64 ## Total file size reported by the OS.
+    contentSize*: int64 ## Amount of bytes for the original binary.
+    dataSize*: int32 ## Length of the payload without metadataSize
+    format*: AppendedFormat ## Type of appended data.
+
 
 # TODO: add to system.nim
 proc `==` *[I, T](x, y: array[I, T]): bool =
@@ -34,84 +48,88 @@ proc `==` *[I, T](x, y: array[I, T]): bool =
       return
   result = true
 
-proc save_int32(FILE: var TFile, value: int): bool =
+proc write_int32_m(FILE: var TFile, value: int) =
+  ## Saves an int32 to the file. Raises EIO if the write had problems.
+  ##
+  ## The integer is saved in motorola byte ordering (big endian), meaning first
+  ## the MSB is written to the file.
   assert value >= 0, "Negative values not supported"
   var T: array[4, uint8]
-  T[0] = value and 0xFF
-  T[1] = (value shr 8) and 0xFF
-  T[2] = (value shr 16) and 0xFF
-  T[3] = (value shr 24) and 0xFF
-  result = FILE.write_buffer(addr(T), 4) == 4
+  T[0] = (value shr 24) and 0xFF
+  T[1] = (value shr 16) and 0xFF
+  T[2] = (value shr 8) and 0xFF
+  T[3] = value and 0xFF
+  let result = FILE.write_buffer(addr(T), 4) == 4
+  if not result:
+    raise new_exception(EIO, "Could not write motorola int32 to file")
 
 
-proc read_int32(FILE: var TFile): int32 =
+proc read_int32_m(FILE: var TFile): int32 =
   ## Returns an int32 from the file, or negative if there was an error.
+  ##
+  ## The integer is expected to be in motorola byte ordering (big endian),
+  ## meaning first the MSB is read from the file.
   var B: array[4, uint8]
   let read_bytes = FILE.read_buffer(addr(B), 4)
   if read_bytes != 4:
-    result = -1
+    raise new_exception(EIO, "Could not read 4 bytes for motorola int32")
   else:
-    # Last byte should not contain its eight bit on.
-    if (B[3] and 0xA0) != 0:
-      result = -1
-    else:
-      result = int32(B[0]) or (int32(B[1]) shl 8) or
-        (int32(B[2]) shl 16) or (int32(B[3]) shl 24)
+    result = int32(B[3]) or (int32(B[2]) shl 8) or
+      (int32(B[1]) shl 16) or (cast[int8](B[0]) shl 24)
 
 
-proc get_binary_data_info*(binary_filename: string,
-    FILE_SIZE: var int64, DATA_SIZE: var int32): bool {. discardable .} =
-  ## Reads the specified filename and fills in the file size and data size.
+proc getAppendedData*(binary_filename: string): AppendedData =
+  ## Reads the specified filename and fills in the AppendedData object.
   ##
-  ## The returned FILE_SIZE includes any appended data, it is the same as you
-  ## would call getFileSize on the binary. The DATA_SIZE includes the magic
-  ## file markers to detect the appended data. Hence, DATA_SIZE will either be
-  ## zero or bigger than metadata_size. FILE_SIZE - DATA_SIZE gives you the
-  ## offset to the data, and DATA_SIZE - metadata_size gives you the total
-  ## size.
-  ##
-  ## The proc returns true only if the file contains appended data.
+  ## If the binary doesn't contain any appended data format will equal noData
+  ## contentSize will equal fileSize.
   var F: TFile = open(binary_filename)
   finally: F.close
-  FILE_SIZE = F.get_file_size
-  DATA_SIZE = 0
-  if FILE_SIZE > metadata_size:
-    var BYTES: array[4, uint8]
-    F.set_file_pos(FILE_SIZE - metadata_size)
-    let read_bytes = F.read_buffer(addr(BYTES), 4)
+  RESULT.fileSize = F.get_file_size
+  RESULT.contentSize = RESULT.fileSize
+  if RESULT.fileSize > metadataSize:
+    var
+      BYTES: array[4, uint8]
+      READ_BYTES: int
+
+    F.set_file_pos(RESULT.fileSize - metadataSize)
+    READ_BYTES = F.read_buffer(addr(BYTES), 4)
     # Abort if we don't find the magic marker.
-    if BYTES != magic_marker:
+    if READ_BYTES != 4 or BYTES != magicMarker:
       return
-    let size = F.read_int32
-    if size > 0:
-      DATA_SIZE = size
-      result = true
 
+    READ_BYTES = F.read_buffer(addr(BYTES), 1)
+    let format = AppendedFormat(BYTES[0])
+    case format
+    of rawFormat:
+      RESULT.format = rawFormat
+    else:
+      RESULT.format = noData
+      return
 
-proc replace_binary_data(binary_filename, data_filename: string) =
-  ## Appends content from data_filename to the end of binary_filename.
-  ##
-  ## If the binary_filename already contains appended data, it will be
-  ## replaced. If you pass the empty string for data_filename, binary_filename
-  ## will be stripped from any appended data.
-  var DATA = ""
-  if data_filename.len > 0:
-    DATA = readFile(data_filename)
-  assert DATA.len < high(int32) - metadata_size, "Data to append too big"
+    let offset = F.read_int32_m
+    if offset > metadataSize:
+      assert offset - metadataSize < high(int32)
+      RESULT.dataSize = offset - metadataSize
+      RESULT.contentSize -= offset
+    else:
+      RESULT.format = noData
 
 
 proc fabricate_test_data(src, dest: string) =
   ## Overwrites dest with the content of src plus appended data.
   let
     appended_data = "Hello appended data!"
-    total_data_size = len(appended_data) + metadata_size
+    total_data_size = len(appended_data) + metadataSize
   var F = open(dest, fm_write)
   finally: F.close
-  var A = magic_marker # Duplicate so we can get its address.
+  var A = magicMarker # Duplicate so we can get its address.
   F.write(read_file(src))
   F.write(appended_data)
   discard F.write_buffer(addr(A), 4)
-  doAssert F.save_int32(total_data_size)
+  A[0] = uint8(rawFormat)
+  discard F.write_buffer(addr(A), 1)
+  F.write_int32_m(total_data_size)
   setFilePermissions(dest, getFilePermissions(src))
 
   echo "Generated binary with appended data at " & dest
@@ -124,26 +142,24 @@ proc test1() =
   ## The test will look at the current binary, if it contains appended data it
   ## will try to read the data and display it. If the binary doesn't contain
   ## data, a new one will be created with the appended data and metadata size.
-  let app_filename = get_app_filename()
-  var
-    FILE_SIZE: int64
-    DATA_SIZE: int32
+  let
+    app_filename = get_app_filename()
+    a = app_filename.getAppendedData
 
-  app_filename.get_binary_data_info(FILE_SIZE, DATA_SIZE)
-  if DATA_SIZE > 0:
+  if a.format == rawFormat:
     # Data found, try to read it!
-    let payload_len = DATA_SIZE - metadata_size
     echo "Binary " & app_filename & " has appended data!"
-    echo "File size " & $FILE_SIZE
-    echo "Data size " & $DATA_SIZE
-    echo "Content size " & $(FILE_SIZE - DATA_SIZE)
+    echo "File size " & $a.fileSize
+    echo "Data size " & $a.dataSize
+    echo "Content size " & $a.contentSize
 
     var F = open(app_filename, fm_read)
     finally: F.close()
 
-    F.set_file_pos(FILE_SIZE - DATA_SIZE)
-    var BUF = new_string(payload_len)
-    let read_len = F.read_buffer(addr(BUF[0]), payload_len)
+    F.set_file_pos(a.contentSize)
+    assert a.dataSize < high(int)
+    var BUF = newString(a.dataSize)
+    let read_len = F.read_buffer(addr(BUF[0]), int(a.dataSize))
     echo "Did read extra content '" & BUF & "'"
   else:
     # No data, create new binary with some appended data.
