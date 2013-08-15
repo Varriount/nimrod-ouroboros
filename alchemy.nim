@@ -3,31 +3,31 @@ import argument_parser, tables, strutils, parseutils, ouroboros, os
 ## Tool to create and append files to binaries.
 
 const
-  param_verbose = @["-v", "--verbose"]
-  help_verbose = "Be verbose about actions and print performance statistics."
+  paramVerbose = @["-v", "--verbose"]
+  helpVerbose = "Be verbose about actions and print performance statistics."
 
-  param_help = @["-h", "--help"]
-  help_help = "Displays commandline help and exits."
+  paramHelp = @["-h", "--help"]
+  helpHelp = "Displays commandline help and exits."
 
-  param_version = @["-V", "--version"]
-  help_version = "Displays the current version and exists."
+  paramVersion = @["-V", "--version"]
+  helpVersion = "Displays the current version and exists."
 
-  param_overwrite = @["-o", "--overwrite"]
-  help_overwrite = "Adds the specified directories as appended data to the " &
+  paramOverwrite = @["-o", "--overwrite"]
+  helpOverwrite = "Adds the specified directories as appended data to the " &
     "binary overwriting any previous appended data."
 
-  param_remove = @["-r", "--remove"]
-  help_remove = "Removes any appended data from the binary."
+  paramRemove = @["-r", "--remove"]
+  helpRemove = "Removes any appended data from the binary."
 
-  param_list = @["-l", "--list"]
-  help_list = "Lists the appended data and its attributes."
+  paramList = @["-l", "--list"]
+  helpList = "Lists the appended data and its attributes."
 
 var
   DID_USE_COMMAND = false
   VERBOSE = false
 
 
-proc validate_unique_command(parameter: string;
+proc validateUniqueCommand(parameter: string;
     VALUE: var Tparsed_parameter): string =
   ## Validates unique commands.
   ##
@@ -48,25 +48,25 @@ proc process_commandline(): Tcommandline_results =
   var PARAMS: seq[Tparameter_specification] = @[]
 
   PARAMS.add(new_parameter_specification(PK_EMPTY,
-    help_text = help_help, names = param_help))
+    help_text = helpHelp, names = paramHelp))
 
   PARAMS.add(new_parameter_specification(PK_EMPTY,
-    help_text = help_verbose, names = param_verbose))
+    help_text = helpVerbose, names = paramVerbose))
 
   PARAMS.add(new_parameter_specification(PK_EMPTY,
-    help_text = help_version, names = param_version))
+    help_text = helpVersion, names = paramVersion))
 
   PARAMS.add(new_parameter_specification(PK_STRING,
-    help_text = help_overwrite, names = param_overwrite,
-    custom_validator = validate_unique_command))
+    help_text = helpOverwrite, names = paramOverwrite,
+    custom_validator = validateUniqueCommand))
 
   PARAMS.add(new_parameter_specification(PK_STRING,
-    help_text = help_remove, names = param_remove,
-    custom_validator = validate_unique_command))
+    help_text = helpRemove, names = paramRemove,
+    custom_validator = validateUniqueCommand))
 
   PARAMS.add(new_parameter_specification(PK_STRING,
-    help_text = help_list, names = param_list,
-    custom_validator = validate_unique_command))
+    help_text = helpList, names = paramList,
+    custom_validator = validateUniqueCommand))
 
   RESULT = parse(PARAMS)
 
@@ -82,7 +82,7 @@ proc process_commandline(): Tcommandline_results =
       echo path_param.str_val & " does not seem to be a valid directory."
       quit(4)
 
-  if RESULT.options.hasKey(param_overwrite[0]):
+  if RESULT.options.hasKey(paramOverwrite[0]):
     if RESULT.positional_parameters.len < 1:
       echo "You need to pass the name of the directories you want to append."
       echo_help(PARAMS)
@@ -99,7 +99,7 @@ proc process_commandline(): Tcommandline_results =
       quit(3)
 
 
-proc remove_appended_data(filename: string) =
+proc removeAppendedData(filename: string) =
   ## Removes previously appended binary data from the specified file.
   ##
   ## If a serious error happens the proc will quit the process.
@@ -112,20 +112,20 @@ proc remove_appended_data(filename: string) =
     echo "Removing " & $a.dataSize & " bytes of appended data from " & filename
 
   var
-    BUF = new_string(int(a.contentSize))
+    BUF = newString(int(a.contentSize))
     INPUT = open(filename, fm_read)
-  let read_len = INPUT.read_buffer(addr(BUF[0]), int(a.contentSize))
+  let readLen = INPUT.readBuffer(addr(BUF[0]), int(a.contentSize))
   INPUT.close
 
-  if read_len != a.contentSize:
-    echo "Error reading bytes from binary! $1 vs $2" % [$read_len,
+  if readLen != a.contentSize:
+    echo "Error reading bytes from binary! $1 vs $2" % [$readLen,
       $a.contentSize]
     quit(1)
 
   INPUT = open(filename, fm_write)
   finally: INPUT.close
-  let written_bytes = INPUT.write_buffer(addr(BUF[0]), int(a.contentSize))
-  if written_bytes != a.contentSize:
+  let writtenBytes = INPUT.writeBuffer(addr(BUF[0]), int(a.contentSize))
+  if writtenBytes != a.contentSize:
     echo "Error writing " & filename
     echo "Careful, the file might have been left in a corrupted state!"
     quit(1)
@@ -137,8 +137,8 @@ proc remove_appended_data(filename: string) =
 when isMainModule:
   let args = process_commandline()
 
-  if args.options.hasKey(param_remove[0]):
-    remove_appended_data(args.options[param_remove[0]].str_val)
+  if args.options.hasKey(paramRemove[0]):
+    removeAppendedData(args.options[paramRemove[0]].str_val)
 
   for param in args.positional_parameters:
     echo "Adding dir '" & param.str_val & "'"
