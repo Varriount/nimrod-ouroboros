@@ -25,14 +25,15 @@ const
   ## Maintenance version changes mean I'm not perfect yet despite all the kpop
   ## I watch.
 
-  magicMarker: array[4, uint8] = [uint8(0xF3), 0x6C, 0x68, 0xFB] ## \
+  magicMarker*: array[4, uint8] = [uint8(0xF3), 0x6C, 0x68, 0xFB] ## \
   ## Magic signature found at the end of the file - 9 bytes.
-  metadataSize = 9 ## Length of the magicMarker plus version and offset.
+  metadataSize* = 9 ## Length of the magicMarker plus version and offset.
 
 type
   AppendedFormat* = enum
     noData = 0, ## No appended data or unsupported file format.
     rawFormat = 1, ## Simple BLOB, ouroboros doesn't touch it in any way.
+    indexFormat = 2, ## Custom file tree index.
 
   AppendedData* = object ## Information on a binary
     path*: string ## Path to the binary with the appended data.
@@ -49,7 +50,7 @@ proc `==` *[I, T](x, y: array[I, T]): bool =
       return
   result = true
 
-proc writeInt32M(FILE: var TFile, value: int) =
+proc writeInt32M*(FILE: var TFile, value: int) =
   ## Saves an int32 to the file. Raises EIO if the write had problems.
   ##
   ## The integer is saved in motorola byte ordering (big endian), meaning first
@@ -65,7 +66,7 @@ proc writeInt32M(FILE: var TFile, value: int) =
     raise newException(EIO, "Could not write motorola int32 to file")
 
 
-proc readInt32M(FILE: var TFile): int32 =
+proc readInt32M*(FILE: var TFile): int32 =
   ## Returns an int32 from the file, or negative if there was an error.
   ##
   ## The integer is expected to be in motorola byte ordering (big endian),
@@ -103,8 +104,8 @@ proc getAppendedData*(binaryFilename: string): AppendedData =
     READ_BYTES = F.readBuffer(addr(BYTES), 1)
     let format = AppendedFormat(BYTES[0])
     case format
-    of rawFormat:
-      RESULT.format = rawFormat
+    of rawFormat: RESULT.format = rawFormat
+    of indexFormat: RESULT.format = indexFormat
     else:
       RESULT.format = noData
       return

@@ -155,13 +155,190 @@ proc newDiskEntry(path, vpath: string): DiskEntry =
   ##
   ## The size will be taken from the path. Only files lesser than 2GiB will be
   ## accepted.
-  result.diskPath = path
-  result.virtualPath = vpath
-  result.size = path.getFileSize
-  if result.size >= high(int32):
+  RESULT.diskPath = path
+  RESULT.virtualPath = vpath
+  RESULT.size = path.getFileSize
+  if RESULT.size >= high(int32):
     echo "File sizes can't be bigger than 2GiB, $1 is $2 bytes" % [
-      result.diskPath, $result.size]
+      RESULT.diskPath, $RESULT.size]
     quit(1)
+
+
+type
+  PacketType = enum ## Different packet types for the index.
+    endOfPackets = 0, ## The end of it all. Noooooooo!
+    dirPacket = 1, ## Short directory packet follows.
+    longDirPacket = 2, ## Long directory packet follows.
+    filePacket = 3 ## File packet follows.
+    longFilePacket = 4 ## Long file packet follows.
+
+  IndexPacket = object ## Holder of the different packet types.
+    kind: PacketType ## Type of the packet.
+    name: string ## Path to store in the packet.
+    offset, len: int32 ## Offset and length, only used for file packets.
+
+  BuildInfo = tuple[packet: IndexPacket, file: DiskEntry] ## \
+  ## Simple wrapper relating packets with disk entries (if necessary).
+
+
+proc newIndexPacket(kind: PacketType,
+    name = "", offset = 0, length = 0): IndexPacket =
+  ## Creates a new index packet.
+  ##
+  ## Pass at least the type, and optionally other info.
+  assert offset < high(int32)
+  assert length < high(int32)
+  RESULT.kind = kind
+  RESULT.name = name
+  RESULT.offset = int32(offset)
+  RESULT.len = int32(length)
+
+proc diskSize(packet: IndexPacket): int =
+  ## Returns the expected disk size for this IndexPacket.
+  case packet.kind:
+  of endOfPackets: RESULT = 1
+  of dirPacket: RESULT = 2 + packet.name.len
+  of longDirPacket: RESULT = 3 + packet.name.len
+  of filePacket: RESULT = 10 + packet.name.len
+  of longFilePacket: RESULT = 11 + packet.name.len
+
+
+proc processDiskEntries(diskEntries: seq[DiskEntry]): seq[BuildInfo] =
+  ## Returns the list of building blocks to create a valid header.
+  ##
+  ## This proc first creates a temporary list of BuildInfo objects, these will
+  ## contain IndexPacket with an offset relative to zero. Once the list is
+  ## created its size is calculated, and it is added to all offsets.
+  var EMPTY_DISK_ENTRY: DiskEntry
+  EMPTY_DISK_ENTRY.diskPath = ""
+  EMPTY_DISK_ENTRY.virtualPath = ""
+  EMPTY_DISK_ENTRY.size = 0
+  RESULT = @[]
+  var
+    VPATH = "/"
+    OFFSET = 0
+
+  for diskEntry in diskEntries:
+    # Check if we have to change virtual path with this entry.
+    var PARENT = diskEntry.virtualPath.parentDir
+    # Files at the root of the virtual path will return empty parent dir.
+    if PARENT.len < 1:
+      PARENT = "/"
+
+    if PARENT != VPATH:
+      var I = newIndexPacket(dirPacket, parent)
+      if I.name.len > 255:
+        I.kind = longDirPacket
+      RESULT.add((I, EMPTY_DISK_ENTRY))
+      VPATH = parent
+
+    # Add the file packet, increase our offset.
+    var I = newIndexPacket(filePacket, diskEntry.virtualPath.extractFilename,
+      OFFSET, int(diskEntry.size))
+    if I.name.len > 255:
+      I.kind = longFilePacket
+    RESULT.add((I, diskEntry))
+    OFFSET += int(diskEntry.size)
+
+  # Add terminating endOfPackets entry.
+  RESULT.add((newIndexPacket(endOfPackets), EMPTY_DISK_ENTRY))
+
+  var TOTAL: int32
+  for indexEntry in RESULT:
+    let (packet, entry) = indexEntry
+    TOTAL += int32(packet.diskSize)
+
+  if VERBOSE:
+    echo "The index of the appended data will be sized ", $TOTAL, " bytes"
+
+  # Cool, now offset all those offsets!
+  for f in 0..RESULT.len()-1:
+    var (PACKET, ENTRY) = RESULT[f]
+    PACKET.offset += TOTAL
+    RESULT[f] = (PACKET, ENTRY)
+
+
+proc write(O: var TFile, p: IndexPacket) =
+  ## Writes to the file F the specified IndexPacket.
+  var
+    B: array[4, uint8]
+    success: bool
+
+  when not defined(release):
+    let startOffset = O.getFilePos
+
+  block action:
+    if p.kind == filePacket or p.kind == longFilePacket:
+      B[0] = uint8(p.kind)
+      if p.kind == filePacket:
+        B[1] = uint8(p.name.len)
+        if O.writeBuffer(addr(B), 2) != 2:
+          break action
+      else:
+        B[1] = (p.name.len shr 8) and 0xFF
+        B[2] = p.name.len and 0xFF
+        if O.writeBuffer(addr(B), 3) != 3:
+          break action
+      O.write(p.name)
+      O.writeInt32M(p.offset)
+      O.writeInt32M(p.len)
+      success = true
+
+    elif p.kind == dirPacket or p.kind == longDirPacket:
+      B[0] = uint8(p.kind)
+      if p.kind == dirPacket:
+        B[1] = uint8(p.name.len)
+        if O.writeBuffer(addr(B), 2) != 2:
+          break action
+      else:
+        B[1] = (p.name.len shr 8) and 0xFF
+        B[2] = p.name.len and 0xFF
+        if O.writeBuffer(addr(B), 3) != 3:
+          break action
+      O.write(p.name)
+      success = true
+
+    elif p.kind == endOfPackets:
+      success = (1 == O.writeBuffer(addr(B), 1))
+    else:
+      assert(false, "Should not reach this!")
+
+  when not defined(release):
+    let
+      endOffset = O.getFilePos
+      wrote = endOffset - startOffset
+    assert wrote == p.diskSize
+
+  if not success:
+    raise newException(EIO, "Could not append index entry properly")
+
+
+proc writeFileContents(O: var TFile, indexEntry: BuildInfo) =
+  ## Writes to the file F the contents of the file specified by the DiskEntry
+  ##
+  ## If the DiskEntry is not a file it will be skipped.
+  if not (indexEntry.packet.kind == filePacket or
+      indexEntry.packet.kind == longFilePacket):
+    return
+
+  if VERBOSE:
+    echo "Adding contents of ", indexEntry.file.diskPath
+
+  let contents = readFile(indexEntry.file.diskPath)
+  assert contents.len == indexEntry.packet.len
+  O.write(contents)
+
+
+proc writeMagicMarker(O: var TFile, dataSize: int) =
+  ## Writes the terminating magic marker and other metadata.
+  var
+    B = magicMarker
+    SIZE = O.writeBuffer(addr(B), 4)
+  assert SIZE == 4
+  B[0] = uint8(indexFormat)
+  SIZE = O.writeBuffer(addr(B), 1)
+  assert SIZE == 1
+  O.writeInt32M(dataSize + 9)
 
 
 proc overwriteAppendedData(filename: string, inputFiles: seq[string]) =
@@ -172,7 +349,7 @@ proc overwriteAppendedData(filename: string, inputFiles: seq[string]) =
   for path in inputFiles:
     if path.existsFile:
       if VERBOSE:
-        echo "Adding file ", path
+        echo "Scanning file ", path
       diskEntries.add(newDiskEntry(path, "/" & path.extractFilename))
 
     else:
@@ -189,12 +366,33 @@ proc overwriteAppendedData(filename: string, inputFiles: seq[string]) =
       # Ok, now iterate recursively over all the files adding them.
       for subPath in walkDirRec(path):
         if VERBOSE:
-          echo "Adding file ", subPath
+          echo "Scanning file ", subPath
         diskEntries.add(newDiskEntry(subPath,
           virtualBase / subPath.substr(len(path))))
 
   sort(diskEntries, sortCmp)
-  for d in diskEntries: echo($d)
+  let
+    indexEntries = processDiskEntries(diskEntries)
+    lastPacket = indexEntries[indexEntries.len - 1].packet
+
+  echo "Appending file index"
+
+  var O = open(filename, fmAppend)
+  finally: O.close
+
+  # Mark the current file position to figure out the total data size later.
+  let contentSize = O.getFilePos
+  for indexEntry in indexEntries: O.write(indexEntry.packet)
+
+  # Verify that the written index entries match the header offset, which due to
+  # how the list is built is stored in the last entry's offset.
+  assert O.getFilePos - contentSize == lastPacket.offset
+
+  echo "Appending files"
+
+  for indexEntry in indexEntries.items: O.writeFileContents(indexEntry)
+  O.writeMagicMarker(int(O.getFilePos - contentSize))
+  echo "Added ", $(O.getFilePos - contentSize), " bytes"
 
 
 when isMainModule:
