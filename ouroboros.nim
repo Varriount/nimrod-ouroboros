@@ -35,6 +35,7 @@ type
     rawFormat = 1, ## Simple BLOB, ouroboros doesn't touch it in any way.
 
   AppendedData* = object ## Information on a binary
+    path*: string ## Path to the binary with the appended data.
     fileSize*: int64 ## Total file size reported by the OS.
     contentSize*: int64 ## Amount of bytes for the original binary.
     dataSize*: int32 ## Length of the payload without metadataSize
@@ -78,13 +79,14 @@ proc readInt32M(FILE: var TFile): int32 =
       (int32(B[1]) shl 16) or (cast[int8](B[0]) shl 24)
 
 
-proc getAppendedData*(binary_filename: string): AppendedData =
+proc getAppendedData*(binaryFilename: string): AppendedData =
   ## Reads the specified filename and fills in the AppendedData object.
   ##
   ## If the binary doesn't contain any appended data format will equal noData
   ## contentSize will equal fileSize.
-  var F: TFile = open(binary_filename)
+  var F: TFile = open(binaryFilename)
   finally: F.close
+  RESULT.path = binaryFilename
   RESULT.fileSize = F.getFileSize
   RESULT.contentSize = RESULT.fileSize
   if RESULT.fileSize > metadataSize:
@@ -136,6 +138,27 @@ proc fabricateTestData(src, dest: string) =
   echo "Added " & $totalDataSize & " bytes to the executable"
 
 
+proc string*(data: AppendedData, filename: string): string =
+  ## Retrieves a string from the appended data.
+  ##
+  ## If the AppendedData doesn't contain any valid appended data, this proc
+  ## raises EInvalidValue.
+  ##
+  ## If the AppendedData.format is rawFormat the filename parameter is ignored
+  ## and the whole data is always returned, so you can pass nil.
+  if data.format == rawFormat:
+    var F = open(data.path, fmRead)
+    finally: F.close()
+
+    F.setFilePos(data.contentSize)
+    assert data.dataSize < high(int)
+    RESULT = newString(data.dataSize)
+    let readBytes = F.readBuffer(addr(RESULT[0]), int(data.dataSize))
+    assert readBytes == data.dataSize
+  else:
+    raise newException(EInvalidValue, "AppendedData empty")
+
+
 proc test1() =
   ## Tests the get_binary_data_info proc.
   ##
@@ -153,14 +176,8 @@ proc test1() =
     echo "Data size " & $a.dataSize
     echo "Content size " & $a.contentSize
 
-    var F = open(appFilename, fm_read)
-    finally: F.close()
-
-    F.setFilePos(a.contentSize)
-    assert a.dataSize < high(int)
-    var BUF = newString(a.dataSize)
-    discard F.readBuffer(addr(BUF[0]), int(a.dataSize))
-    echo "Did read extra content '" & BUF & "'"
+    let extra_content = a.string(nil)
+    echo "Did read extra content '" & extra_content & "'"
   else:
     # No data, create new binary with some appended data.
     var (DIR, NAME, EXT) = appFilename.splitFile()
