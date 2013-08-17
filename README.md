@@ -21,23 +21,27 @@ License
 Installation and usage
 ======================
 
-At the moment the module doesn't do much, it's in alpha state. Could you please
-test it for me on your platform? If yes, to test it please run:
+Use [Nimrod's babel package manager](https://github.com/nimrod-code/babel) to
+install the [argument parser module](https://github.com/gradha/argument_parser)
+required by this program and the [nake](https://github.com/fowlmouth/nake) tool to run build tasks:
 
-	$ nimrod c -r ouroboros.nim
+	$ babel install argument_parser
+	$ babel install nake
 
-This command will compile and run the binary. The program should detect that it
-doesn't have any appended data and create a ``compressed_`` variant of it. When
-you run this second version you should get a message similar to:
+Once you have these modules installed, use nake to list the tasks and run one:
 
-	Binary /foo/bar/compressed_ouroboros has appended data!
-	File size 237468
-	Data size 28
-	Content size 237440
-	Did read extra content 'Hello appended data!'
+	$ nake
+	$ nake [task_name]
 
-Does this work on your platform? I'm interested in hearing if it works or not
-for other platforms out of the box, or not at all.
+The available tasks are:
+
+* ``bin``: builds the ``alchemy`` binary. Use ``alchemy`` to add, inspect
+  and remove arbitrary appended data to binaries (or just about
+  anything). Run ``alchemy`` to see its help and available commands.
+
+* ``local_install``: builds and copies ``alchemy`` to your ``~/bin`` path.
+
+* ``docs``: Runs nimdoc on the alchemy and ouroboros modules.
 
 
 Changes
