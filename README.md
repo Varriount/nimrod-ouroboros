@@ -35,6 +35,12 @@ Once you have these modules installed, use nake to list the tasks and run one:
 
 The available tasks are:
 
+* ``babel``: uses babel to install the ouroboros module locally.
+  At the moment ouroboros is not yet in the public babel but you
+  can install locally and use it as if it were. You will need to
+  press ``Y`` if you already have a previous ouroboros package
+  installed.
+
 * ``bin``: builds the ``alchemy`` binary. Use ``alchemy`` to add, inspect
   and remove arbitrary appended data to binaries (or just about
   anything). Run ``alchemy`` to see its help and available commands.

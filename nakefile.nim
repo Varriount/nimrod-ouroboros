@@ -7,6 +7,10 @@ let
   alchemy_dest = getHomeDir() / "bin" / alchemy_exe & ExeExt
   modules = @["alchemy", "ouroboros"]
 
+task "babel", "Uses babelsssss to install ouroboros locally":
+  if shell("babel install"):
+    echo "Now you can 'import ouroboros' and consume yourself."
+
 task "bin", "Compiles alchemy tool":
   if shell("nimrod c", alchemy_exe):
     echo "Tool alchemy built"
@@ -21,7 +25,3 @@ task "docs", "Generates export API docs for for the modules":
 task "local_install", "Copies " & alchemy_exe & " to " & alchemy_dest:
   if shell("nimrod c", alchemy_exe):
     copyFileWithPermissions(alchemy_exe, alchemy_dest)
-
-task "babel", "Uses babel to install ouroboros locally":
-  if shell("babel install"):
-    echo "Now you can 'import ouroboros' and consume yourself."
