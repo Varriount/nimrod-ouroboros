@@ -99,7 +99,7 @@ proc process_commandline(): Tcommandline_results =
       quit(3)
 
 
-proc removeAppendedData(filename: string) =
+proc removeAppendedData*(filename: string) =
   ## Removes previously appended binary data from the specified file.
   ##
   ## If a serious error happens the proc will quit the process.
@@ -334,8 +334,14 @@ proc writeMagicMarker(O: var TFile, dataSize: int) =
   O.writeInt32M(dataSize + 9)
 
 
-proc overwriteAppendedData(filename: string, inputFiles: seq[string]) =
-  ## Overwrites the specified filename appended data with files under dirs.
+proc overwriteAppendedData*(filename: string, inputFiles: seq[string]) =
+  ## Overwrites the specified filename appended data with the input files.
+  ##
+  ## Input files will be treated differently if they are a file or a directory.
+  ## A file will be added directly, but it will be added without any preceeding
+  ## path to the root of the virtual fs. Directories on the other hand will be
+  ## added to the datafile with the last path component as the base name, but
+  ## they will be scanned recursively to add all children elements.
   removeAppendedData(filename)
   var diskEntries: seq[DiskEntry] = @[]
 
