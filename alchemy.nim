@@ -165,17 +165,10 @@ proc newDiskEntry(path, vpath: string): DiskEntry =
 
 
 type
-  PacketType = enum ## Different packet types for the index.
-    endOfPackets = 0, ## The end of it all. Noooooooo!
-    dirPacket = 1, ## Short directory packet follows.
-    longDirPacket = 2, ## Long directory packet follows.
-    filePacket = 3 ## File packet follows.
-    longFilePacket = 4 ## Long file packet follows.
-
-  IndexPacket = object ## Holder of the different packet types.
-    kind: PacketType ## Type of the packet.
+  IndexPacket = object #of AppendedFileInfo
     name: string ## Path to store in the packet.
     offset, len: int32 ## Offset and length, only used for file packets.
+    kind: PacketType ## Type of the packet.
 
   BuildInfo = tuple[packet: IndexPacket, file: DiskEntry] ## \
   ## Simple wrapper relating packets with disk entries (if necessary).
@@ -392,7 +385,40 @@ proc overwriteAppendedData(filename: string, inputFiles: seq[string]) =
 
   for indexEntry in indexEntries.items: O.writeFileContents(indexEntry)
   O.writeMagicMarker(int(O.getFilePos - contentSize))
-  echo "Added ", $(O.getFilePos - contentSize), " bytes"
+  let totalBytes = O.getFilePos
+  echo "Added ", $(totalBytes - contentSize), " bytes, total ", $totalBytes
+
+
+proc listAppendedData(filename: string) =
+  ## Lists the appended data found in the specified file.
+  let data = filename.getAppendedData
+  case data.format
+  of noData:
+    echo "The file $1 doesn't seem to contain appended data" % [filename]
+  of rawFormat:
+    echo "The file $1 contains a binary blob, sized $2 bytes" %
+      [filename, $data.dataSize]
+  of indexFormat:
+    echo "Listing contents of ", filename
+
+    # First search what is the longest string of appended bytes.
+    var
+      W = len("bytes")
+      TOTAL = 0
+    for file in data.fileInfoList:
+      W = max(W, len($file.len))
+      TOTAL += file.len
+
+    # Now properly display a header, content and footer.
+    echo align("bytes", W) & " path"
+    let separator = align("---", W) & " ---"
+    echo separator
+
+    for file in data.fileInfoList:
+      echo(align(($file.len), W) & " " & file.name)
+    echo separator
+
+    echo "$1 bytes in $2 files" % [$TOTAL, $data.fileInfoList.len]
 
 
 when isMainModule:
@@ -404,3 +430,5 @@ when isMainModule:
     overwriteAppendedData(args.options[paramOverwrite[0]].strVal,
       map(args.positionalParameters,
         proc(x: Tparsed_parameter): string = x.strVal))
+  elif args.options.hasKey(paramList[0]):
+    listAppendedData(args.options[paramList[0]].strVal)
