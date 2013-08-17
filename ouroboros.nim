@@ -6,7 +6,7 @@
 ## http://forum.nimrod-code.org/t/194.
 ##
 ## Source code for this module may be found at
-## https://github.com/gradha/ouroboros.
+## https://github.com/gradha/nimrod-ouroboros.
 
 import os, unsigned, tables
 

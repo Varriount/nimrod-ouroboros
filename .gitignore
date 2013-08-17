@@ -5,6 +5,9 @@ nimcache/
 
 # Full paths.
 /alchemy
+/alchemy.html
 /compressed_ouroboros
+/nakefile
 /ouroboros
+/ouroboros.html
 /test.dat
