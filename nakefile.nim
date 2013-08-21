@@ -7,7 +7,7 @@ let
   alchemy_dest = getHomeDir() / "bin" / alchemy_exe & ExeExt
   modules = @["alchemy", "ouroboros"]
 
-task "babel", "Uses babelsssss to install ouroboros locally":
+task "babel", "Uses babel to install ouroboros locally":
   if shell("babel install"):
     echo "Now you can 'import ouroboros' and consume yourself."
 
