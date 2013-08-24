@@ -179,6 +179,18 @@ proc fileInfoList*(data: AppendedData): seq[AppendedFileInfo] =
   return data.files
 
 
+proc fileInfo*(data: AppendedData, filename: string): AppendedFileInfo =
+  ## Returns the file information for a single file.
+  ##
+  ## This proc throws EInvalidKey if the filename is not in the appended data.
+  if data.format == indexFormat:
+    if not data.files.isNil():
+      if data.fileTable.hasKey(filename):
+        RESULT = data.files[data.fileTable[filename]]
+        return
+  raise newException(EInvalidKey, "Path " & filename & " not found")
+
+
 proc getAppendedData*(binaryFilename: string): AppendedData =
   ## Reads the specified filename and fills in the AppendedData object.
   ##
@@ -258,10 +270,11 @@ proc readString(filename: string, offset, len: int): string =
     raise newException(EIO, "Couldn't read all the necessary bytes!")
 
 
-proc existsFile(data: AppendedData, path: string): bool =
+proc existsFile*(data: AppendedData, path: string): bool =
   ## Returns true if the path is listed in the appendeda data.
-  if not data.files.isNil():
-    RESULT = data.fileTable.hasKey(path)
+  if data.format == indexFormat:
+    if not data.files.isNil():
+      RESULT = data.fileTable.hasKey(path)
 
 
 proc string*(data: AppendedData, filename: string): string =
