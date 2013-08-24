@@ -92,8 +92,8 @@ proc readInt32M*(file: TFile): int32 =
   if readBytes != 4:
     raise newException(EIO, "Could not read 4 bytes for motorola int32")
   else:
-    result = int32(B[3]) or (int32(B[2]) shl 8) or
-      (int32(B[1]) shl 16) or (cast[int8](B[0]) shl 24)
+    result = (int32(B[3]) or int32(uint32(B[2]) shl 8) or
+      int32(uint32(B[1]) shl 16) or (int32(cast[int8](B[0])) shl 24))
 
 
 proc readInt16M*(file: TFile): int =
@@ -107,7 +107,7 @@ proc readInt16M*(file: TFile): int =
   if readBytes != 2:
     raise newException(EIO, "Could not read 2 bytes for motorola int16")
   else:
-    result = int32(B[1]) or (cast[int8](B[0]) shl 8)
+    result = int32(B[1]) or (int32(cast[int8](B[0])) shl 8)
 
 
 proc readInt8*(file: TFile): int =
@@ -145,7 +145,9 @@ proc readIndexFiles(f: TFile, DATA: var AppendedData) =
     of longDirPacket: SIZE = f.readInt16M
     of filePacket: SIZE = f.readInt8
     of longFilePacket: SIZE = f.readInt16M
-    else: raise newException(EIO, "Unknown packet type in stream")
+    else:
+      echo "Uh oh, got packet " & $int(packet)
+      raise newException(EIO, "Unknown packet type in stream")
     assert SIZE > 0
 
     var NAME = newString(SIZE)
