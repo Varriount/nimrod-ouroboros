@@ -8,7 +8,7 @@
 ## Source code for this module may be found at
 ## https://github.com/gradha/nimrod-ouroboros.
 
-import os, unsigned, tables
+import os, unsigned, tables, sets
 
 const
   versionStr* = "0.3.1" ## Module version as a string.
@@ -43,6 +43,7 @@ type
     format*: AppendedFormat ## Type of appended data.
     files: seq[AppendedFileInfo] ## List of files for indexFormat and above.
     fileTable: TTable[string, int] ## Maps vpath to files index.
+    dirs: seq[string] ## List of separate dirs, nil unless calculated.
 
   AppendedFileInfo* = object of Tobject ## \
     ## Provides information about an appended file.
@@ -168,6 +169,33 @@ proc readIndexFiles(f: TFile, DATA: var AppendedData) =
   assert DATA.files.len > 0
 
 
+proc buildDirsList(data: var AppendedData) =
+  ## Modifies the dirs field to contain a list of directory paths.
+  ##
+  ## The dirs field is computed iterating over the files sequence and
+  ## extracting all the possible paths.
+  ##
+  ## Call this proc only if the dirs field is nil. After this proc the field is
+  ## guaranteed to be non nil.
+  assert data.dirs.isNil
+  data.dirs = @[]
+  var currentDir = ""
+  # Huh, parentDir("/") doesn't remove the slash, is this a bug?
+  #var i: AppendedFileInfo
+  #i.name = "/"
+  #i.offset = 0
+  #i.len = 33
+  #data.files.add(i)
+  var seen = initSet[string]()
+  for fileInfo in data.files:
+    let dir = fileInfo.name.parentDir
+    if dir != currentDir:
+      currentDir = dir
+      if not seen.contains(dir):
+        data.dirs.add(dir)
+        seen.incl(dir)
+
+
 proc fileInfoList*(data: AppendedData): seq[AppendedFileInfo] =
   ## Returns the list of files in the appended data.
   ##
@@ -236,6 +264,7 @@ proc getAppendedData*(binaryFilename: string): AppendedData =
 
   if format == indexFormat:
     F.readIndexFiles(RESULT)
+    RESULT.buildDirsList
 
 
 proc fabricateTestData(src, dest: string) =
@@ -270,11 +299,40 @@ proc readString(filename: string, offset, len: int): string =
     raise newException(EIO, "Couldn't read all the necessary bytes!")
 
 
+proc expandFilename*(data: AppendedData, path: string): string =
+  ## Expands the relative path into a full path.
+  ##
+  ## This proc will return always the input path if it starts with a path
+  ## separator, since those are already absolute. For relative paths, it will
+  ## search all the currently loaded directories and return the proper
+  ## combination for the first match.
+  ##
+  ## If the relative path doesn't exist, this proc returns the empty string.
+  if path.len > 0 and path[0] in {dirSep, altSep}:
+    RESULT = path
+  else:
+    if (not data.dirs.isNil):
+      for dir in data.dirs:
+        RESULT = dir / path
+        if data.fileTable.hasKey(RESULT):
+          return
+
+    # End of search, nothing found, reset RESULT to something valid.
+    RESULT = ""
+
+
 proc existsFile*(data: AppendedData, path: string): bool =
   ## Returns true if the path is listed in the appendeda data.
-  if data.format == indexFormat:
+  ##
+  ## You can pass an absolute path or a relative one, which will be searched
+  ## for using the ``expandFilename`` proc.
+  if data.format == indexFormat and path.len > 0:
     if not data.files.isNil():
-      RESULT = data.fileTable.hasKey(path)
+      # Is this a full path, or a relative search path?
+      if path[0] in {dirSep, altSep}:
+        RESULT = data.fileTable.hasKey(path)
+      else:
+        RESULT = data.expandFilename(path).len > 0
 
 
 proc string*(data: AppendedData, filename: string): string =
@@ -334,6 +392,23 @@ proc test2() =
   #echo a.string("/Cobralation/build.py")
 
 
-#when isMainModule:
-#  #test1()
-#  test2()
+proc test3() =
+  ## This is integrated with the nakefile gradha_test which produces a nimrod
+  ## compiler with a lot of appended data. The purpose is testing the search
+  ## all paths options of the retrieval procs.
+  let exe = "tests" / "1" / "nimrod" & exeExt
+  if not exe.existsFile:
+    quit("Didn't find " & exe)
+  let data = exe.getAppendedData
+  assert data.format == indexFormat
+  echo "Does /system.nim exist? ", data.existsFile("/system.nim")
+  echo "Does system.nim exist? ", data.existsFile("system.nim")
+  let fullPath = data.expandFilename("system.nim")
+  echo "full ", fullPath
+  echo "Hey!"
+
+
+when isMainModule:
+  #test1()
+  #test2()
+  test3()

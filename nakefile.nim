@@ -27,10 +27,11 @@ task "local_install", "Copies " & alchemy_exe & " to " & alchemy_dest:
     copyFileWithPermissions(alchemy_exe, alchemy_dest)
 
 task "gradha_test", "Random tests, likely useless unlee you are gradha":
-  direShell("nimrod c", alchemy_exe)
-  let
-    nimrod_exe = findExe("nimrod")
-    test_exe = "tests" / "1" / "nimrod"
-  copyFileWithPermissions(nimrod_exe, test_exe)
-  direShell("./alchemy", "-o", test_exe, "-v", "../root/lib")
-  direShell("./alchemy", "-l", test_exe)
+  #direShell("nimrod c", alchemy_exe)
+  #let
+  #  nimrod_exe = findExe("nimrod")
+  #  test_exe = "tests" / "1" / "nimrod"
+  #copyFileWithPermissions(nimrod_exe, test_exe)
+  #direShell("./alchemy", "-o", test_exe, "-v", "../root/lib")
+  #direShell("./alchemy", "-l", test_exe)
+  direShell("nimrod", "c", "-r", "ouroboros")
