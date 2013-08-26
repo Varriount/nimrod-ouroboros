@@ -196,6 +196,29 @@ proc buildDirsList(data: var AppendedData) =
         seen.incl(dir)
 
 
+proc expandFilename*(data: AppendedData, path: string): string =
+  ## Expands the relative path into a full path.
+  ##
+  ## This proc will return always the input path if it starts with a path
+  ## separator, since those are already absolute. For relative paths, it will
+  ## search all the currently loaded directories and return the proper
+  ## full path for the first match.
+  ##
+  ## If the relative path doesn't exist in any directory, this proc returns the
+  ## empty string.
+  if path.len > 0 and path[0] in {dirSep, altSep}:
+    RESULT = path
+  else:
+    if (not data.dirs.isNil):
+      for dir in data.dirs:
+        RESULT = dir / path
+        if data.fileTable.hasKey(RESULT):
+          return
+
+    # End of search, nothing found, reset RESULT to something valid.
+    RESULT = ""
+
+
 proc fileInfoList*(data: AppendedData): seq[AppendedFileInfo] =
   ## Returns the list of files in the appended data.
   ##
@@ -211,10 +234,13 @@ proc fileInfo*(data: AppendedData, filename: string): AppendedFileInfo =
   ## Returns the file information for a single file.
   ##
   ## This proc throws EInvalidKey if the filename is not in the appended data.
+  ## The input filename will be passed through ``expandFilename`` first, so you
+  ## can pass relative filenames directly to search for all possible paths.
   if data.format == indexFormat:
     if not data.files.isNil():
-      if data.fileTable.hasKey(filename):
-        RESULT = data.files[data.fileTable[filename]]
+      let fullPath = data.expandFilename(filename)
+      if fullPath.len > 0:
+        RESULT = data.files[data.fileTable[fullPath]]
         return
   raise newException(EInvalidKey, "Path " & filename & " not found")
 
@@ -299,28 +325,6 @@ proc readString(filename: string, offset, len: int): string =
     raise newException(EIO, "Couldn't read all the necessary bytes!")
 
 
-proc expandFilename*(data: AppendedData, path: string): string =
-  ## Expands the relative path into a full path.
-  ##
-  ## This proc will return always the input path if it starts with a path
-  ## separator, since those are already absolute. For relative paths, it will
-  ## search all the currently loaded directories and return the proper
-  ## combination for the first match.
-  ##
-  ## If the relative path doesn't exist, this proc returns the empty string.
-  if path.len > 0 and path[0] in {dirSep, altSep}:
-    RESULT = path
-  else:
-    if (not data.dirs.isNil):
-      for dir in data.dirs:
-        RESULT = dir / path
-        if data.fileTable.hasKey(RESULT):
-          return
-
-    # End of search, nothing found, reset RESULT to something valid.
-    RESULT = ""
-
-
 proc existsFile*(data: AppendedData, path: string): bool =
   ## Returns true if the path is listed in the appendeda data.
   ##
@@ -344,16 +348,21 @@ proc string*(data: AppendedData, filename: string): string =
   ##
   ## If the AppendedData.format is rawFormat the filename parameter is ignored
   ## and the whole data is always returned, so you can pass nil.
+  ##
+  ## The input filename is passed in through the ``expandFilename`` proc first,
+  ## so you can pass relative paths to search all the available directories.
   if data.format == rawFormat:
     assert data.dataSize < high(int)
     RESULT = readString(data.path, int(data.contentSize), int(data.dataSize))
-    return
 
-  assert data.format == indexFormat
-  if data.fileTable.hasKey(filename):
-    let info = data.files[data.fileTable[filename]]
-    RESULT = readString(data.path, int(data.contentSize + info.offset),
-      int(info.len))
+  elif data.format == indexFormat:
+    let fullPath = data.expandFilename(filename)
+    if fullPath.len > 0:
+      let info = data.files[data.fileTable[fullPath]]
+      RESULT = readString(data.path, int(data.contentSize + info.offset),
+        int(info.len))
+  else:
+    raise newException(EInvalidValue, "No appended data")
 
 
 proc test1() =
