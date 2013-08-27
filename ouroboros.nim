@@ -178,7 +178,7 @@ proc buildDirsList(data: var AppendedData) =
   ## Call this proc only if the dirs field is nil. After this proc the field is
   ## guaranteed to be non nil.
   assert data.dirs.isNil
-  data.dirs = @[]
+  data.dirs = @["" & dirSep]
   var currentDir = ""
   # Huh, parentDir("/") doesn't remove the slash, is this a bug?
   #var i: AppendedFileInfo
@@ -187,6 +187,8 @@ proc buildDirsList(data: var AppendedData) =
   #i.len = 33
   #data.files.add(i)
   var seen = initSet[string]()
+  seen.incl(data.dirs[0])
+
   for fileInfo in data.files:
     let dir = fileInfo.name.parentDir
     if dir != currentDir:
@@ -410,10 +412,11 @@ proc test3() =
     quit("Didn't find " & exe)
   let data = exe.getAppendedData
   assert data.format == indexFormat
-  echo "Does /system.nim exist? ", data.existsFile("/system.nim")
-  echo "Does system.nim exist? ", data.existsFile("system.nim")
-  let fullPath = data.expandFilename("system.nim")
-  echo "full ", fullPath
+  for p in @["system.nim", "lib/system/hti.nim"]:
+    let s = "/" & p
+    echo "Does " & s & " exist? ", data.existsFile(s)
+    echo "Does " & p & " exist? ", data.existsFile(p)
+    echo "Full is ", data.expandFilename(p)
   echo "Hey!"
 
 
