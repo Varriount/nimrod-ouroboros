@@ -64,7 +64,7 @@ proc `==` *[I, T](x, y: array[I, T]): bool =
   for f in low(x)..high(x):
     if x[f] != y[f]:
       return
-  result = true
+  RESULT = true
 
 proc writeInt32M*(file: TFile, value: int) =
   ## Saves an int32 to the file. Raises EIO if the write had problems.
@@ -93,7 +93,7 @@ proc readInt32M*(file: TFile): int32 =
   if readBytes != 4:
     raise newException(EIO, "Could not read 4 bytes for motorola int32")
   else:
-    result = (int32(B[3]) or int32(uint32(B[2]) shl 8) or
+    RESULT = (int32(B[3]) or int32(uint32(B[2]) shl 8) or
       int32(uint32(B[1]) shl 16) or (int32(cast[int8](B[0])) shl 24))
 
 
@@ -108,7 +108,7 @@ proc readInt16M*(file: TFile): int =
   if readBytes != 2:
     raise newException(EIO, "Could not read 2 bytes for motorola int16")
   else:
-    result = int32(B[1]) or (int32(cast[int8](B[0])) shl 8)
+    RESULT = int32(B[1]) or (int32(cast[int8](B[0])) shl 8)
 
 
 proc readInt8*(file: TFile): int =
@@ -120,7 +120,7 @@ proc readInt8*(file: TFile): int =
   if readBytes != 1:
     raise newException(EIO, "Could not read byte for int8")
   else:
-    result = B[0]
+    RESULT = B[0]
 
 
 proc readIndexFiles(f: TFile, DATA: var AppendedData) =
