@@ -4,5 +4,8 @@ version       = "0.3.0"
 author        = "Grzegorz Adam Hankiewicz"
 description   = """Extracts appended data from binaries."""
 license       = "MIT"
-
+bin           = "alchemy"
 InstallFiles = "CHANGES.md,LICENSE.md,README.md,alchemy.nim,docs/file_format.md,nakefile.nim,ouroboros.nim"
+
+[Deps]
+Requires: "nake >= 1.0,argument_parser >= 0.1.2"
