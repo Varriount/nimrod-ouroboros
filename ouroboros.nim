@@ -11,8 +11,8 @@
 import os, unsigned, tables, sets
 
 const
-  versionStr* = "0.3.0" ## Module version as a string.
-  versionInt* = (major: 0, minor: 3, maintenance: 0) ## \
+  versionStr* = "0.2.0" ## Module version as a string.
+  versionInt* = (major: 0, minor: 2, maintenance: 0) ## \
   ## Module version as an integer tuple.
   ##
   ## Major versions changes mean a break in API backwards compatibility, either
