@@ -1,15 +1,21 @@
 Nimrod Ouroboros
 ================
 
-This is a new module in progress for the [Nimrod programming
-language](http://nimrod-code.org). It's purpose is to provide an API which in
-the future can be used to access easily data appended to the currently running
-executable. Likely this will be done through the [zipfiles
-module](http://nimrod-code.org/zipfiles.html) to provide a read only file
-system like access to the data.
+This is a module for the [Nimrod programming language](http://nimrod-code.org).
+Its purpose is to provide an API to easily access data appended to the
+currently running executable. Appending resources to your binary is not
+something you will want to do for really big applications, but it can be useful
+to *pack* configuration files or other small resources along your statically
+compiled binary for portability if procs like `slurp` or `gorge` from the
+[system module](http://nimrod-code.org/system.html) aren't enough for you.
 
-For further discussion see [a thread in the Nimrod forum discussing the
-creation of a portable nimrod compiler](http://forum.nimrod-code.org/t/194).
+The aim of the module is to be integrated in a future version of the compiler
+so that the compiler can be distributed as a single binary to *unsuspecting*
+parties with minimal *baggage*, thus lowering the entry barrier for installing
+an *additional alien awkward* (triple As!) programming language tool into your
+existing non Nimrod projects.  For further discussion see [a thread in the
+Nimrod forum discussing the creation of a portable nimrod
+compiler](http://forum.nimrod-code.org/t/194).
 
 
 License
@@ -18,43 +24,94 @@ License
 [MIT license](LICENSE.md).
 
 
-Installation and usage
-======================
+Installation
+============
+
+Stable version
+--------------
 
 Use [Nimrod's babel package manager](https://github.com/nimrod-code/babel) to
-install the [argument parser module](https://github.com/gradha/argument_parser)
-required by this program and the [nake](https://github.com/fowlmouth/nake) tool to run build tasks:
+install the package and related tools:
 
-	$ babel install argument_parser
-	$ babel install nake
+	$ babel install ouroboros
 
-Once you have these modules installed, use nake to list the tasks and run one:
+Development version
+-------------------
 
-	$ nake
-	$ nake [task_name]
+Use [Nimrod's babel package manager](https://github.com/nimrod-code/babel) to
+install locally the github checkout:
 
-The available tasks are:
+	$ git clone https://github.com/gradha/nimrod-ouroboros.git
+	$ cd nimrod-ouroboros
+	$ git checkout develop
+	$ babel install
 
-* ``babel``: uses babel to install the ouroboros module locally.
-  At the moment ouroboros is not yet in the public babel but you
-  can install locally and use it as if it were. You will need to
-  press ``Y`` if you already have a previous ouroboros package
-  installed.
+Usage
+=====
 
-* ``bin``: builds the ``alchemy`` binary. Use ``alchemy`` to add, inspect
-  and remove arbitrary appended data to binaries (or just about
-  anything). Run ``alchemy`` to see its help and available commands.
+Once you have installed the package with babel you can ``import ouroboros`` in
+your programs and use it. The ``ouroboros`` module only provides read access
+procs. You append data to your binary first with the alchemy tool, which is
+installed into your Babel's binary directory:
 
-* ``local_install``: builds and copies ``alchemy`` to your ``~/bin`` path.
+	$ alchemy --help
 
-* ``docs``: Runs nimdoc on the alchemy and ouroboros modules.
+At the moment you can either add a set of directories to your binary or remove
+them. Future versions will provide finer granularity, like excluding certain
+patterns or specifying manually the final virtual path of the added file.
+
+Once your binary has appended data, the following code should work:
+
+	import ouroboros, os
+	
+	let
+	  appFilename = get_app_filename()
+	  a = appFilename.getAppendedData
+	
+	if a.format != noData:
+	  # Data found, try to read it!
+	  echo "Binary " & appFilename & " has appended data!"
+	  echo "File size " & $a.fileSize
+	  echo "Data size " & $a.dataSize
+	  echo "Content size " & $a.contentSize
+
+At the moment only tests on the macosx platform have been performed. Other
+platforms should follow, feel free to report bugs/problems if you find them.
+
+Documentation
+=============
+
+The ``ouroboros`` module comes with embedded documentation you need to generate
+using the Nimrod compiler. Go to the directory where babel installs the package
+(check babel's documentation for the correct path on your platform) and run
+Nimrod's doc command. Unix example:
+
+	$ cd ~/.babel/pkgs/ouroboros-x.y.z
+	$ nimrod doc ouroboros
+	$ open ouroboros.html
+
+You can do the same for the ``alchemy`` module. It is likely that ``alchemy``
+will be merged into ``ouroboros`` in the future, but for the moment you can use
+it as a programmatic interface to the commandline tool.
+
+Appended data to binaries follows a custom file format which is described in
+the [doc/file_format.md](doc/file_format.md) file.
 
 
 Changes
 =======
 
-This is version 0.3.1. For a list of changes see the [CHANGES.md
+This is version 0.3.0. For a list of changes see the [CHANGES.md
 file](CHANGES.md).
+
+
+Plans for the future
+====================
+
+* Better ``alchemy`` tool.
+* Different compression options for appended data.
+* Emulation of fs access for macosx' app bundles (which don't really need
+  ouroboros).
 
 
 Git branches
