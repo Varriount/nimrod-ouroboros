@@ -12,7 +12,7 @@ What to do for a new public release?
 * ``git commit -av`` into the release branch the version number changes.
 * git flow release finish versionname (the tagname is versionname without v).
 * Move closed issues from `future milestone` to the release milestone.
-* Push all to git: ``git push; git push --tags``.
+* Push all to git: ``git push origin master develop --tags``.
 * Increase version numbers, at least maintenance (stable version + 0.1.1):
   * Modify [README.md](../README.md).
   * Modify [ouroboros.nim](../ouroboros.nim).
