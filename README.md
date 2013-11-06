@@ -53,7 +53,7 @@ The available tasks are:
 Changes
 =======
 
-This is version 0.3.1. For a list of changes see the [CHANGES.md
+This is version 0.3.0. For a list of changes see the [CHANGES.md
 file](CHANGES.md).
 
 
