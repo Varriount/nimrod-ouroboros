@@ -5,5 +5,4 @@ author        = "Grzegorz Adam Hankiewicz"
 description   = """Extracts appended data from binaries."""
 license       = "MIT"
 
-SkipDirs = "docs,tests"
-SkipFiles = "nakefile,nakefile.nim,test.dat"
+InstallFiles = "CHANGES.md,LICENSE.md,README.md,alchemy.nim,docs/file_format.md,nakefile.nim,ouroboros.nim"
