@@ -101,7 +101,7 @@ the [doc/file_format.md](doc/file_format.md) file.
 Changes
 =======
 
-This is version 0.2.0. For a list of changes see the [CHANGES.md
+This is version 0.3.1. For a list of changes see the [CHANGES.md
 file](CHANGES.md).
 
 

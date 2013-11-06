@@ -1,6 +1,6 @@
 [Package]
 name          = "ouroboros"
-version       = "0.2.0"
+version       = "0.3.1"
 author        = "Grzegorz Adam Hankiewicz"
 description   = """Extracts appended data from binaries."""
 license       = "MIT"
