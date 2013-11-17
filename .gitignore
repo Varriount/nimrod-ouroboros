@@ -4,9 +4,14 @@
 nimcache/
 
 # Full paths.
+/CHANGES.html
+/LICENSE.html
+/README.html
 /alchemy
 /alchemy.html
 /compressed_ouroboros
+/docs/file_format.html
+/docs/release_steps.html
 /nakefile
 /ouroboros
 /ouroboros.html
