@@ -37,6 +37,7 @@ Stable version
 Use [Nimrod's babel package manager](https://github.com/nimrod-code/babel) to
 install the package and related tools:
 
+	$ babel update
 	$ babel install ouroboros
 
 Development version
