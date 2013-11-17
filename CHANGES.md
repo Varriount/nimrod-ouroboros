@@ -4,7 +4,8 @@ Changes
 v0.3.1, ????-??-??
 ------------------
 
-* Nothing yet.
+* [Adds link to unrelated cool ouroboros
+  shirt](https://github.com/gradha/nimrod-ouroboros/issues/10).
 
 v0.2.0, 2013-11-06
 ------------------

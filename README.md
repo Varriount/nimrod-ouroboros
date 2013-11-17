@@ -17,6 +17,10 @@ existing non Nimrod projects.  For further discussion see [a thread in the
 Nimrod forum discussing the creation of a portable nimrod
 compiler](http://forum.nimrod-code.org/t/194).
 
+Not related to this project, there are [cool shirts with
+ouroboros](http://www.topatoco.com/merchant.mvc?Screen=PROD&Store_Code=TO&Product_Code=OG-OUROBOROS&Category_Code=OG)
+on them.
+
 
 License
 =======
