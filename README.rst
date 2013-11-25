@@ -98,7 +98,8 @@ task <https://github.com/fowlmouth/nake>`_. Unix example::
     $ open ouroboros.html
 
 The nakefile ``doc`` task will also generate documentation for the ``alchemy``
-module and other text files.  It is likely that ``alchemy`` will be merged into
+module and other text files, the `docindex file <docindex.rst>`_ will contain
+pointers to all of them. It is likely that ``alchemy`` will be merged into
 ``ouroboros`` in the future, but for the moment you can use it as a
 programmatic interface to the command line tool.
 
