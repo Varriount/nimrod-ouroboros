@@ -28,5 +28,7 @@ What to do for a new public release?
 * ``git commit -av`` into develop with *Bumps version numbers for develop
   branch. Refs #release issue*.
 * Close the dummy release issue.
+* Check out ``gh-pages`` branch and run update script.
+* Add new/updated files to repo and ``git push``.
 * Announce at
   `http://forum.nimrod-code.org/t/298 <http://forum.nimrod-code.org/t/298>`_.
