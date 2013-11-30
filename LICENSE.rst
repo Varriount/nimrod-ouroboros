@@ -1,3 +1,7 @@
+========================
+Nimrod Ouroboros license
+========================
+
 | The MIT License (MIT)
 | Copyright (c) 2013 Grzegorz Adam Hankiewicz
 

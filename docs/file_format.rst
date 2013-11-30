@@ -1,5 +1,6 @@
-Ouroboros appended data file format
-===================================
+==========================================
+Nimrod Ouroboros appended data file format
+==========================================
 
 A normal binary is read from the beginning and trailing bytes are discarded by
 the operating system. What follows is the payload plus an informative *footer*
