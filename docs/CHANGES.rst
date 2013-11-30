@@ -7,6 +7,8 @@ v0.3.1, ????-??-??
 
 * `Adds link to unrelated cool ouroboros shirt
   <https://github.com/gradha/nimrod-ouroboros/issues/10>`_.
+* `Modify docs to be rst
+  <https://github.com/gradha/nimrod-ouroboros/issues/9>`_.
 
 v0.2.0, 2013-11-06
 ------------------

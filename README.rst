@@ -105,7 +105,7 @@ pointers to all of them. It is likely that ``alchemy`` will be merged into
 programmatic interface to the command line tool.
 
 Appended data to binaries follows a custom file format which is described in
-the `doc/file_format.rst <doc/file_format.rst>`_ file.
+the `docs/file_format.rst <docs/file_format.rst>`_ file.
 
 
 Changes
