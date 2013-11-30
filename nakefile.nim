@@ -1,4 +1,4 @@
-import nake, os, times, osproc
+import nake, os, times, osproc, htmlparser, xmltree, strtabs, strutils
 
 const
   alchemy_exe = "alchemy"
@@ -16,6 +16,22 @@ task "babel", "Uses babel to install ouroboros locally":
 task "bin", "Compiles alchemy tool":
   if shell("nimrod c", alchemy_exe):
     echo "Tool alchemy built"
+
+proc change_rst_links_to_html(html_file: string) =
+  ## Opens the file, iterates hrefs and changes them to .html if they are .rst.
+  let html = loadHTML(html_file)
+  var DID_CHANGE: bool
+
+  for a in html.findAll("a"):
+    let href = a.attrs["href"]
+    if not href.isNil:
+      let (dir, filename, ext) = splitFile(href)
+      if cmpIgnoreCase(ext, ".rst") == 0:
+        a.attrs["href"] = dir / filename & ".html"
+        DID_CHANGE = true
+
+  if DID_CHANGE:
+    writeFile(html_file, $html)
 
 proc needs_refresh(target: string, src: varargs[string]): bool =
   assert len(src) > 0, "Pass some parameters to check for"
@@ -50,9 +66,9 @@ task "doc", "Generates export API docs for for the modules":
       html_file = module & ".html"
     if not html_file.needs_refresh(nim_file): continue
     if not shell("nimrod doc --verbosity:0", module):
-      quit("Could not generate module for " & module)
+      quit("Could not generate html doc for " & module)
     else:
-      echo "Generated " & module & ".html"
+      echo "Generated " & html_file
 
   # Generate html files from the rst docs.
   for rst_file, html_file in all_rst_files():
@@ -60,6 +76,7 @@ task "doc", "Generates export API docs for for the modules":
     if not shell("nimrod rst2html --verbosity:0", rst_file):
       quit("Could not generate html doc for " & rst_file)
     else:
+      change_rst_links_to_html(html_file)
       echo rst_file & " -> " & html_file
   echo "All done"
 

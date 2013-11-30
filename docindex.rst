@@ -3,9 +3,10 @@ Documentation index
 ===================
 
 Available documentation files for `Nimrod Ouroboros
-<https://github.com/gradha/nimrod-ouroboros>`_:
+<https://github.com/gradha/nimrod-ouroboros>`_. To obtain these HTML files you
+need to run ``nake doc`` at the root of the project:
 
-* API (available after running ``nake doc``):
+* API generated from nimrod code.
 
   * `alchemy <alchemy.html>`_.
   * `ouroboros <ouroboros.html>`_.
@@ -17,11 +18,3 @@ Available documentation files for `Nimrod Ouroboros
   * `docs/CHANGES.rst <docs/CHANGES.rst>`_.
   * `docs/file_format.rst <docs/file_format.rst>`_.
   * `docs/release_steps.rst <docs/release_steps.rst>`_ (only git version).
-
-* HTML (available after running ``nake doc``):
-
-  * `LICENSE.html <LICENSE.html>`_.
-  * `README.html <README.html>`_.
-  * `docs/CHANGES.html <docs/CHANGES.html>`_.
-  * `docs/file_format.html <docs/file_format.html>`_.
-  * `docs/release_steps.html <docs/release_steps.html>`_ (only git version).
