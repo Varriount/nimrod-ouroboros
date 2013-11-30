@@ -8,8 +8,10 @@ need to run ``nake doc`` at the root of the project:
 
 * API generated from nimrod code.
 
-  * `alchemy.html <alchemy.html>`_.
-  * `ouroboros.html <ouroboros.html>`_.
+  * `alchemy.html <alchemy.html>`_ (`online version
+    <http://gradha.github.io/nimrod-ouroboros/docs-develop/alchemy.html>`_).
+  * `ouroboros.html <ouroboros.html>`_ (`online version
+    <http://gradha.github.io/nimrod-ouroboros/docs-develop/ouroboros.html>`_).
 
 * Text:
 
