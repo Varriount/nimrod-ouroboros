@@ -4,13 +4,13 @@
 nimcache/
 
 # Full paths.
-/CHANGES.html
 /LICENSE.html
 /README.html
 /alchemy
 /alchemy.html
 /compressed_ouroboros
 /docindex.html
+/docs/CHANGES.html
 /docs/file_format.html
 /docs/release_steps.html
 /nakefile

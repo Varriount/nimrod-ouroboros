@@ -10,7 +10,7 @@ What to do for a new public release?
   * Modify `README.rst <../README.rst>`_.
   * Modify `ouroboros.nim <../ouroboros.nim>`_.
   * Modify `ouroboros.babel <../ouroboros.babel>`_.
-  * Update `CHANGES.rst <../CHANGES.rst>`_ with list of changes and
+  * Update `CHANGES.rst <CHANGES.rst>`_ with list of changes and
     version/number.
 
 * ``git commit -av`` into the release branch the version number changes.
@@ -22,7 +22,7 @@ What to do for a new public release?
   * Modify `README.rst <../README.rst>`_.
   * Modify `ouroboros.nim <../ouroboros.nim>`_.
   * Modify `ouroboros.babel <../ouroboros.babel>`_.
-  * Add to `CHANGES.rst <../CHANGES.rst>`_ development version with unknown
+  * Add to `CHANGES.rst <CHANGES.rst>`_ development version with unknown
     date.
 
 * ``git commit -av`` into develop with *Bumps version numbers for develop

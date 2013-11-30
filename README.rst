@@ -111,8 +111,8 @@ the `doc/file_format.rst <doc/file_format.rst>`_ file.
 Changes
 =======
 
-This is version 0.3.1. For a list of changes see the `CHANGES.rst file
-<CHANGES.rst>`_.
+This is version 0.3.1. For a list of changes see the `docs/CHANGES.rst file
+<docs/CHANGES.rst>`_.
 
 
 Plans for the future

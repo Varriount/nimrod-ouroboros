@@ -7,7 +7,7 @@ let
   alchemy_dest = getHomeDir() / "bin" / alchemy_exe & ExeExt
   modules = @["alchemy", "ouroboros"]
   rst_files = @["docs"/"file_format", "docs"/"release_steps",
-    "LICENSE", "README", "CHANGES", "docindex"]
+    "docs"/"CHANGES", "LICENSE", "README", "docindex"]
 
 task "babel", "Uses babel to install ouroboros locally":
   if shell("babel install"):
