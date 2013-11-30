@@ -5,7 +5,7 @@ author        = "Grzegorz Adam Hankiewicz"
 description   = """Extracts appended data from binaries."""
 license       = "MIT"
 bin           = "alchemy"
-InstallFiles = "CHANGES.md,LICENSE.md,README.md,alchemy.nim,docs/file_format.md,nakefile.nim,ouroboros.nim"
+InstallFiles = "docs/CHANGES.rst,LICENSE.rst,README.rst,alchemy.nim,docs/file_format.rst,nakefile.nim,ouroboros.nim,docindex.rst"
 
 [Deps]
 Requires: "nake >= 1.0,argument_parser >= 0.1.2"
