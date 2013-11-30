@@ -1,3 +1,7 @@
+# Wildcard
+*.swp
+
+# Absolute paths
 /.DS_Store
 /LICENSE.html
 /LICENSE.rst
