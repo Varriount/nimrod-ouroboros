@@ -9,6 +9,8 @@ v0.3.1, ????-??-??
   <https://github.com/gradha/nimrod-ouroboros/issues/10>`_.
 * `Modify docs to be rst
   <https://github.com/gradha/nimrod-ouroboros/issues/9>`_.
+* `Add webpage with generated documentation
+  <https://github.com/gradha/nimrod-ouroboros/issues/8>`_.
 
 v0.2.0, 2013-11-06
 ------------------

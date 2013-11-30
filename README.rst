@@ -104,6 +104,12 @@ pointers to all of them. It is likely that ``alchemy`` will be merged into
 ``ouroboros`` in the future, but for the moment you can use it as a
 programmatic interface to the command line tool.
 
+Generated documentation for all public API versions can also be found at
+`http://gradha.github.io/nimrod-ouroboros/
+<http://gradha.github.io/nimrod-ouroboros/>`_. No guarantees on its freshness,
+though, as these are manually updated. Check the generation date at the bottom
+of the files.
+
 Appended data to binaries follows a custom file format which is described in
 the `docs/file_format.rst <docs/file_format.rst>`_ file.
 
