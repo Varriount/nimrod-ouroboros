@@ -59,13 +59,6 @@ type
     longFilePacket = 4 ## Long file packet follows.
 
 
-# TODO: add to system.nim
-proc `==` *[I, T](x, y: array[I, T]): bool =
-  for f in low(x)..high(x):
-    if x[f] != y[f]:
-      return
-  RESULT = true
-
 proc writeInt32M*(file: TFile, value: int) =
   ## Saves an int32 to the file. Raises EIO if the write had problems.
   ##
