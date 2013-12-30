@@ -10,12 +10,12 @@ let
     "docs"/"CHANGES", "LICENSE", "README", "docindex"]
 
 task "babel", "Uses babel to install ouroboros locally":
-  if shell("babel install"):
-    echo "Now you can 'import ouroboros' and consume yourself."
+  direshell("babel install -y")
+  echo "Now you can 'import ouroboros' and consume yourself."
 
 task "bin", "Compiles alchemy tool":
-  if shell("nimrod c", alchemy_exe):
-    echo "Tool alchemy built"
+  direshell("nimrod c", alchemy_exe)
+  echo "Tool alchemy built"
 
 proc change_rst_links_to_html(html_file: string) =
   ## Opens the file, iterates hrefs and changes them to .html if they are .rst.
@@ -89,8 +89,8 @@ task "check_doc", "Validates rst format for a subset of documentation":
       echo output
 
 task "local_install", "Copies " & alchemy_exe & " to " & alchemy_dest:
-  if shell("nimrod c", alchemy_exe):
-    copyFileWithPermissions(alchemy_exe, alchemy_dest)
+  direshell("nimrod c", alchemy_exe)
+  copyFileWithPermissions(alchemy_exe, alchemy_dest)
 
 task "gradha_test", "Random tests, likely useless unlee you are gradha":
   #direShell("nimrod c", alchemy_exe)
