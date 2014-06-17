@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Nimrod Ouroboros license</title>
+<title></title>
 <style type="text/css">
 
 span.DecNumber {color: blue}
@@ -31,12 +31,12 @@ span.RawData {color: blue}
 span.Assembler  {color: blue}
 span.Preprocessor {color: DarkViolet}
 span.Directive  {color: DarkViolet}
-span.Command, span.Rule, span.Hyperlink, span.Label, span.Reference, 
+span.Command, span.Rule, span.Hyperlink, span.Label, span.Reference,
 span.Other  {color: black}
 
 div.navigation {
   -moz-border-radius: 5px 5px 5px 5px;
-  float: left; 
+  float: left;
   width: 30%;
   margin: 0; padding: 0;
   border: 3px outset #7F7F7F;
@@ -212,11 +212,11 @@ table.docutils td, table.docutils th { border-bottom:1px solid #9D9D9D; }
 /* color: #4d4d4d} */
 
 /* table.docutils td:hover, table.docinfo td:hover {color: #000000} */
-  
+
 
 table.docutils th.field-name, table.docinfo th.docinfo-name {
   font-weight: bold;text-align: left;white-space: nowrap;padding-left: 0 }
-  
+
 table.docutils th
 {
 color: black;
@@ -225,7 +225,7 @@ background-color: #E3E3E3;
 border-top: 1px solid #1d1d1d;
 border-bottom: 1px solid #1d1d1d;
 }
-  
+
 h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
 h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {font-size: 100% }
 ul.auto-toc { list-style-type: none }
@@ -238,14 +238,147 @@ a.reference:hover {color: #E00000;background-color: #ffff00;display: margin;
 </head>
 <body>
 <div class="document" id="documentId">
-<h1 class="title">Nimrod Ouroboros license</h1>
-<p>The MIT License (MIT)<br />Copyright (c) 2013 Grzegorz Adam Hankiewicz<br /></p><p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
-<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
-<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. </p>
+<h1 class="title"></h1>
+<h1>Ouroboros appended data file format</h1>
 
+<p>A normal binary is read from the beginning and trailing bytes are discarded by
+the operating system. What follows is the payload plus an informative <em>footer</em>
+(the inverse of a file header). Tools or programs willing to detect if a binary
+contains appended data have to open the binary and read the last few bytes of
+the footer.</p>
 
+<ul>
+<li>Binary data</li>
+<li>Payload data</li>
+<li>Footer metadata</li>
+</ul>
 
-<small>Generated: 2014-06-18 00:48:04 UTC</small>
+<h1>Footer format</h1>
+
+<p>The footer length is always 9 bytes long. If you position the stream at the end
+of the file size minus 9 bytes, you should read a 4 bytes magic marker, a
+format/version byte, and 4 bytes lenght value:</p>
+
+<ol>
+<li>0xF3</li>
+<li>0x6C</li>
+<li>0x68</li>
+<li>0xFB</li>
+<li>payload format/version</li>
+<li>payload length fragment (MSB)</li>
+<li>payload length fragment</li>
+<li>payload length fragment</li>
+<li>payload length fragment (LSB)</li>
+</ol>
+
+<p>Note that the footer can&#39;t have a payload length of negative or zero value.
+This translates into a maximum payload length of 2GiB. If a payload is zero or
+negative you should consider the file corrupt or without appended data.</p>
+
+<p>The payload length is stored in Motorola byte ordering (big endian), where the
+first byte contains the most significant byte of the value.</p>
+
+<h1>Payload format</h1>
+
+<p>The payload format allows diffent formats and expansion for the future.</p>
+
+<h2>Payload format 0x00, unsupported</h2>
+
+<p>This value will never be present in any file. If a reader of appended data
+reads an unknown file format, it should be treated as zero, meaning the reader
+won&#39;t be able to handle the payload and operations on the binary should be
+avoided.</p>
+
+<h2>Payload format 0x01, raw BLOB</h2>
+
+<p>This value means that the payload is treated as a single large binary object.
+It is the most simple way of handling data, but it is usually limited to
+retrieving the whole binary data at once.</p>
+
+<h2>Payload format 0x02, indexed format</h2>
+
+<p>This format is used for appending several files to the binary. The files&#39;
+contents are contcatenated and put after an index. The index contains the
+original filename paths and sizes to recover the correct pieces:</p>
+
+<pre><code>payload = index packets + file1 content + ... + fileN content
+</code></pre>
+
+<p>The <em>index packets</em> are just a sequence of <em>commands</em> which build up in memory
+the original file paths of the payload. A reader should parse completely all
+index packets in one go and keep in memory the tree they generate to know where
+each file starts/ends. The packets create in memory a read only replica of a
+virtual filesystem structure with its own directories and filenames. When you
+start to read the information think of an empty filesystem at the root (<code>/</code>).
+Packets are found one after another, with the first byte indicating the type of
+content following it.</p>
+
+<p>There is not much point in forward compatibility, so if you find an unknown
+packet type just abort and give up parsing the file.</p>
+
+<h3>Index packet 0x00, end of index</h3>
+
+<p>If a packet header is zero it means there are no more packets to process.</p>
+
+<h3>Index packet 0x01, directory prefix</h3>
+
+<p>This packet means that the current virtual filesystem has to change to another
+directory. A single bytes will specify the length in bytes of the absolute path
+filename, which will be used for the following files. All directory prefix
+packets are required to have a length of 1, because all paths have to start
+with a starting slash. The path can optionally have a trailing slash.</p>
+
+<p>On disk the official path separator is the forward slash <code>/</code> but paths read
+into memory should be filtered through the os.UnixToNativePath proc for end
+user code. Paths are case sensitive. Path components like <code>.</code> or <code>..</code>
+<strong>will not</strong> be resolved. The encoding of the paths is UTF8.  Examples:</p>
+
+<ul>
+<li>Byte length 6, string value <code>/home/</code></li>
+<li>Byte length 16, string value <code>/españa/level01</code></li>
+<li>Byte length 18, string value <code>/gallery/티아라</code></li>
+<li>Byte length 1, string value <code>/</code></li>
+</ul>
+
+<p>It is perfectly valid to alternate between directories between packets going
+back and forth, though that&#39;s a little bit wasteful.</p>
+
+<h3>Index packet 0x02, long directory prefix</h3>
+
+<p>The format of this packet is exactly the same as 0x01 except that the length
+byte is replaced with two bytes in Motorola byte ordering (big endian) to
+specify the length in bytes of the absolute path filename.</p>
+
+<p>The two byte directory prefix is separate because most of the time path
+prefixes will likely fit into a single byte.</p>
+
+<h3>Index packet 0x03, file</h3>
+
+<p>This packet means that a file will be <em>placed</em> at the current filesystem
+virtual path previously specified through directory packets. If no directory
+packets have been specified, files are to be placed at the root of the virtual
+filesystem. This packet has the format:</p>
+
+<pre><code>packet = filename length + filename + offset + length
+</code></pre>
+
+<p>The filename length is stored in a single byte, and it contains the length in
+bytes of the UTF filename. Both the offset and length are specified as four
+bytes in Motorola byte ordering (big endian). The offset is measured as the
+number of bytes since the beginning of the appended data. It is therefore
+impossible to have an offset smaller than a few bytes since the index of
+filenames contributes to it.</p>
+
+<h3>Index packet 0x04, long name file</h3>
+
+<p>The format of this packet is exactly the same as 0x03 except that the length
+byte is replaced with two bytes in Motorola byte ordering (big endian) to
+specify the length in bytes of the filename.</p>
+
+<p>The two byte directory prefix is separate because most of the time filenames
+will likely fit into a single byte.</p>
+
+<small>Generated: 2014-06-18 00:48:03 UTC</small>
 </div>
 </body>
 </html>
